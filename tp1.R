@@ -61,7 +61,7 @@ plot(fitted(res),residuals(res))
 #l'erreur quadratique des résidus est de 15878.7
 erreur_quadratique = sum(residuals(res)^2)
 print(erreur_quadratique)
-estim_var = erreur_quadratique / length(residuals(res))
+estim_var = sqrt( erreur_quadratique / length(residuals(res)) )
 print(estim_var)
 plot(x=tab$R, y=res$residuals)
 #on remarque que les residuals sont plutot négatifs pour R<100 et plutot positifs pour R>100
@@ -74,4 +74,37 @@ qqline(res$residuals)
 shapiro.test(res$residuals)
 # le shapiro test nous donne une p-value de 82%.
 #on ne peut donc pas rejeter l'hypothèse que l'échantillon suive une loi normale.
+
+# QUESTION 6
+
+indTest = seq(1,nrow(tab),by=3)
+print(indTest)
+
+# on crée la data de test
+tabTest = tab[indTest,]
+print(head(tabTest))
+
+# on crée la data d'entrainement
+tabTrain = tab[(1:nrow(tab))[! 1:nrow(tab) %in% indTest],]
+print(head(tabTrain))
+
+# on construit un modèle sur la data d'entrainement
+model=lm('R~.',data=tabTrain)
+print(model)
+summary(model)
+
+# on prédit des estimations sur la data de test
+tabTestClean = subset(tabTest, select=-c(R))
+prediction=predict(model,tabTestClean)
+print(prediction)
+
+# on calcule l'erreur quadratique moyenne
+realite = tabTest$R
+erreur = prediction - realite
+err_quad_moy = sum(erreur^2) / length(realite)
+print(err_quad_moy)
+ecart_type = sqrt(err_quad_moy)
+print(ecart_type)
+# on remarque que l'écart type est deux fois plus élevé que dans les questions précédentes. 
+# le modèle prédit donc moins bien de nouvelles données.
 
