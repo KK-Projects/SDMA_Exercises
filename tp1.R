@@ -108,3 +108,16 @@ print(ecart_type)
 # on remarque que l'écart type est deux fois plus élevé que dans les questions précédentes. 
 # le modèle prédit donc moins bien de nouvelles données.
 
+# QUESTION 7
+
+x11()
+par(mfrow=c(2,2))
+plot(res)
+
+#residuals vs fitted : on remarque que les erreur sont en moyenne autour de zero
+#normal QQ : on remarque que les points sont alignés avec la première bisectrice, le modèle est donc assez proche de la réalité
+#scale location: les erreurs sont plus grandes près de la valeur moyenne de la variable à prédire.
+#residuals vs leverage: tous les points sont à l'intérieur de la distance de cook
+
+#on remarque dans ces quatre figures que l'observation 11 pose problème, il serait judicieux de refaire l'analyse en excluant cette observation.
+
