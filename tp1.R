@@ -204,6 +204,8 @@ plot_gaussiennes(5)
 # 2. Mixture de regression par l'algorithm EM
 
 data = read.table("regression_double.txt", header=F, sep=';')
+library(mixtools)
+
 # Les données ont l'air de suivre deux droites différentes
 # peut arriver si les données appartiennes à deux catégories différentes
 # On ne peut pas utiliser une regression classique car celle ci minimize l'erreur
