@@ -1,4 +1,7 @@
-# setwd('C:/Users/Karl/Desktop/Karl/Centrale3A/SDMA/TP1/')
+#TP realise par:
+#BERRADA Karim
+#YALA Marouane
+#BOU ABBOUD Karl
 
 #APPLICATION 1
 
@@ -120,65 +123,83 @@ plot(res)
 
 #on remarque dans ces quatre figures que l'observation 11 pose probleme, il serait judicieux de refaire l'analyse en excluant cette observation.
 
+
+
+
+
 ## APPLICATION 2:
 
 # QUESTION 1
 irm = as.matrix(read.table("irm_thorax.txt", header=F, sep=';'))
+irmRow = as.vector(irm)
 
 # QUESTION 2
 image(irm)
 hist(irm)
+# on observe qu il y a deux couleurs dominantes: le jaune (100 - 150) et le rouge (200-250)
+# la distribution ressemble � deux lois normales, il serait judicieux de se pencher sur un mod�le bimodale.
 
 # QUESTION 3
-gmdensity <- function(x, p, m, sigma) {
-  n <- length(p)
-  dens <- 0
-  p <- p / sum(p)
-  for (i in 1:n) {
-    dens <- dens + p[i]*dnorm(x, m[i], sigma[i])
-  }
-  return(dens)
-}
 
-em <- function(x, N) {
-  n <- length(x)
-  p <- rep(1/N, N)
-  sigma <- sqrt(rep(var(x), N));
-  mu <- sample(x, N)
+em = function(x,i,iter) {
+  p = rep(1/i,i)
+  mu = sample(x,i)
+  sd = rep(sqrt(var(x)),i)
+  n = length(x)
+  PostMatrix = matrix(0,n,i)
   
-  for (j in 1:50) {
-    # E step
-    res <- matrix(0, N, n) 
-    for (k in 1:N) {
-      res[k,] <- p[k] * dnorm(x, mu[k], sigma[k]) / gmdensity(x, p, mu, sigma)
+  #les iterations de l'algorithme EM
+  for (k in 1:iter) { 
+    
+    # l'etape E : calcul des probas a posteriori de la variable inconnue en fonction des donnees connues
+    for (j in 1:n) { 
+      PostMatrix[j,] = (p*dnorm(x[j],mu,sd)) / sum(p*dnorm(x[j],mu,sd))
     }
     
-    # M step
-    for (k in (1:N)) {
-      mu[k] <- sum(x * res[k,]) / sum(res[k,])
-      p[k] <- sum(res[k,]) / sum(res)
-      sigma[k] <- sqrt(sum(((x - mu[k])**2)*res[k,])/ sum(res[k,]))
+    # l'etape M : calcul des nouvelles estimations des param�tres
+    for (u in 1:i) {
+      #mise a jour de p : proba d'appartenir a la loi normale u
+      p[u] = mean(PostMatrix[,u])
+      #mise a jour de mu : moyenne de la gaussienne u
+      mu[u] = sum(x*PostMatrix[,u]) / sum(PostMatrix[,u])
+      #mise a jour de sd : ecart type de la gaussienne u
+      sd[u] = sqrt(sum(PostMatrix[,u]*(x-mu[u])^2) / sum(PostMatrix[,u]))
     }
   }
-  return(list(p=p, mu=mu, sigma=sigma))
+  return(list(p=p,mu=mu,sd=sd))
 }
 
+
+em_result = em(irmRow,2,50)
+print(em_result)
+#en repetant plusieurs fois cette commande (pour avoir des conditions initiales differentes a chaque fois)
+#on trouve que les pixels de cet irm de repartissent de maniere egale (p=c(0.5,0.5))
+#entre une loi normale (mu=141,sd=27) et une autre (mu=228,sd=18)
+#ce qui concorde avec ce que l'on observe sur l'histogramme
 # Ici on realise un nombre fini d'itérations avant d'arreter l'algorithme
 # Il faudrait néanmoins pour généraliser utiliser un autre critère comme attendre que la norme entre deux itérations des paramètre
 # à effectuer soit sous un certain seuil
 # Le problème à résoudre est non-convexe et on peut se retrouver pris un minimum local, il faut généralement appliquer l'algorithme
 # plusieurs fois avec des conditions aléatoires et garder le résultat avec la vraisemblance la plus élevée
-# Parfois un k-means est appliqué pour déterminer les conditions intiales.
 
-for (i in c(2, 3, 5)) {
-  em_result <- em(as.vector(irm), i)
-  gm <- gmdensity(seq(1:255), em_result$p, em_result$mu, em_result$sigma)
-  hist(irm, freq=F, main=paste("EM with", i, "classes"), ylim = c(0,max(gm)))
-  lines(gm)
+#QUESTION 4
+
+plot_gaussiennes = function(k) {
+  em_result = em(irmRow,k,50)
+  vraiss = rep(0,255)
+  for (i in 1:255) {
+    vraiss[i] = sum(em_result$p*dnorm(i,em_result$mu,em_result$sd))
+  }
+  hist(irm, freq=F, main=paste("EM with", k, "classes"), ylim = c(0,max(vraiss)))
+  lines(vraiss)
 }
-# la segmentation semble pertinente en particulier pour deux classes comme c'était prévu
+plot_gaussiennes(2)
+plot_gaussiennes(3)
+plot_gaussiennes(5)
+# la segmentation semble pertinente en particulier pour deux classes comme c'etait prevu
 
-## Mélange de gaussiennes
+
+## Melange de gaussiennes
 
 # 2. Mixture de regression par l'algorithm EM
 
@@ -218,6 +239,6 @@ for (k in c(1,3,5)) {
   print(paste("Erreur de prédiction de classes pour", k, "itérations", mean(klass!=class)))
 }
 
-# L'erreur de classification n'est pas une fonction strictement décroissante
-# C'est du au fait qu'on essaie d'optimiser un problème non-convexe et qu'il arrive
+# L'erreur de classification n'est pas une fonction strictement decroissante
+# C'est du au fait qu'on essaie d'optimiser un probleme non-convexe et qu'il arrive
 # qu'on se retrouve coince dans un minimum local
