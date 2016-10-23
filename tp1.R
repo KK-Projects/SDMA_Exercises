@@ -72,28 +72,27 @@ qqline(res$residuals)
 
 shapiro.test(res$residuals)
 # le shapiro test nous donne une p-value de 82%.
-<<<<<<< HEAD
-#on ne peut donc pas rejeter l'hypothèse que l'échantillon suive une loi normale.
+# on ne peut donc pas rejeter l'hypothese que l'echantillon suive une loi normale.
 
 # QUESTION 6
 
 indTest = seq(1,nrow(tab),by=3)
 print(indTest)
 
-# on crée la data de test
+# on cree la data de test
 tabTest = tab[indTest,]
 print(head(tabTest))
 
-# on crée la data d'entrainement
+# on cree la data d'entrainement
 tabTrain = tab[(1:nrow(tab))[! 1:nrow(tab) %in% indTest],]
 print(head(tabTrain))
 
-# on construit un modèle sur la data d'entrainement
+# on construit un mod?le sur la data d'entrainement
 model=lm('R~.',data=tabTrain)
 print(model)
 summary(model)
 
-# on prédit des estimations sur la data de test
+# on predit des estimations sur la data de test
 tabTestClean = subset(tabTest, select=-c(R))
 prediction=predict(model,tabTestClean)
 print(prediction)
@@ -105,8 +104,8 @@ err_quad_moy = sum(erreur^2) / length(realite)
 print(err_quad_moy)
 ecart_type = sqrt(err_quad_moy)
 print(ecart_type)
-# on remarque que l'écart type est deux fois plus élevé que dans les questions précédentes. 
-# le modèle prédit donc moins bien de nouvelles données.
+# on remarque que l'ecart type est deux fois plus eleve que dans les questions precedentes. 
+# le modele predit donc moins bien de nouvelles donn?es.
 
 # QUESTION 7
 
@@ -115,14 +114,11 @@ par(mfrow=c(2,2))
 plot(res)
 
 #residuals vs fitted : on remarque que les erreur sont en moyenne autour de zero
-#normal QQ : on remarque que les points sont alignés avec la première bisectrice, le modèle est donc assez proche de la réalité
-#scale location: les erreurs sont plus grandes près de la valeur moyenne de la variable à prédire.
-#residuals vs leverage: tous les points sont à l'intérieur de la distance de cook
+#normal QQ : on remarque que les points sont alignes avec la premiere bisectrice, le modele est donc assez proche de la realite
+#scale location: les erreurs sont plus grandes pres de la valeur moyenne de la variable a predire.
+#residuals vs leverage: tous les points sont a l'interieur de la distance de cook
 
-#on remarque dans ces quatre figures que l'observation 11 pose problème, il serait judicieux de refaire l'analyse en excluant cette observation.
-
-=======
-#on ne peut donc pas rejeter l'hypothese que l'echantillon suive une loi normale.
+#on remarque dans ces quatre figures que l'observation 11 pose probleme, il serait judicieux de refaire l'analyse en excluant cette observation.
 
 ## APPLICATION 2:
 
@@ -225,4 +221,3 @@ for (k in c(1,3,5)) {
 # L'erreur de classification n'est pas une fonction strictement dÃ©croissante
 # C'est du au fait qu'on essaie d'optimiser un problÃ¨me non-convexe et qu'il arrive
 # qu'on se retrouve coince dans un minimum local
->>>>>>> master
