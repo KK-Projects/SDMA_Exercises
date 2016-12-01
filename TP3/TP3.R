@@ -1,3 +1,7 @@
+# TP réalisé par 
+# - Ahmed-Karim Berrada
+# - Karl Bou Abboud
+
 
 # Application I : regression Ridge et Lasso
 ### Regression Ridge
