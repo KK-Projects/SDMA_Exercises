@@ -96,6 +96,204 @@ mean((Y-pY$fit)**2)
 
 # Application II : aggregation des modeles
 
+library(rpart)
+library(ipred)
+library(randomForest)
+library(kernlab)
+library(ade4)
+
+
+tab = read.table('spam.txt', header=T, sep=';');
+dim(tab)
+colnames(tab)
+# Table has 4601 rows (observations) and 58 columns (variables)
+# Le 48 premieres variables representent le pourcentagede mots egals
+# a une certaine valeur dans le texte
+
+# Les 6 suivantes font la même chose pour un caractère particulier
+  # longeur moyenne sequence de lettres
+  # nombre de lettres capitales
+# target variable: spam ou non
+
+# Splitting data in train and test
+## 75% of the sample size
+smp_size <- floor(0.75 * nrow(tab))
+
+## set the seed to make your partition reproductible
+set.seed(123)
+train_ind <- sample(seq_len(nrow(tab)), size = smp_size)
+
+tab_train <- tab[train_ind, ]
+tab_test <- tab[-train_ind, ]
+# Arbres de Classification
+
+tree <- rpart('spam ~ .', data=tab_train)
+par(mfrow = c(1,1), xpd = NA) 
+text(tree, use.n = TRUE)
+# La variable la plus influente est A.53, c'est à dire la présence du caractere "$"
+
+p_train <- predict(tree, tab_train, type="class")
+t_train <- table(tab_train$spam, p_train)
+(t_train[2] + t_train[3]) / sum(t_train) 
+# 8.7% erreurs sur la base d'apprentissage
+t_train[2] / sum(t_train) 
+# non detection 5.9%
+t_train[3] / sum(t_train)
+# taux de fausse alarme 2.8%
+
+p_test <- predict(tree, tab_test, type="class")
+t_test <- table(tab_test$spam, p_test)
+(t_test[2] + t_test[3]) / sum(t_test) 
+# 10.3% erreurs sur la base de test
+t_test[2] / sum(t_test)
+# non detection 7.6%
+t_test[3] / sum(t_test)
+# taux de fausse alarme 2.7%
+# le taux de non détection est plus éleve  que celui de fausse alarme
+# on préfère laisser passer de spam que de classer en spam de email valides
+
+# Aggregation de modeles. Bagging
+
+bag <- bagging(spam ~ ., data=tab_train)
+# La fonction genere 25 arbres par default
+
+p_train <- predict(bag, tab_train, type="class")
+t_train <- table(tab_train$spam, p_train)
+(t_train[2] + t_train[3]) / sum(t_train) 
+# 0.11% erreurs sur la base d'apprentissage
+t_train[2] / sum(t_train) 
+# non detection 0.09%
+t_train[3] / sum(t_train)
+# taux de fausse alarme 0.057%
+
+p_test <- predict(bag, tab_test, type="class")
+t_test <- table(tab_test$spam, p_test)
+(t_test[2] + t_test[3]) / sum(t_test)
+# 6.42% erreurs sur la base de test
+t_test[2] / sum(t_test) 
+# non detection 4.43%
+t_test[3] / sum(t_test) 
+# taux de fausse alarme 1.9%
+
+# On obtient ici de meilleurs résultats vue que le bagging fait appel à plusieurs
+# classifieurs, et utilise le système de vote pour trouver la bonne estimation
+
+
+# Random Forest
+tab = read.table('spam.txt', header=T, sep=';');
+indtrain = read.table('indtrain.txt', header=T, sep=';');
+train <- train <- tab[indtrain$indtrain,]
+forest <- randomForest(spam ~ ., train)
+
+p_train <- predict(forest, train, type="class")
+t_train <- table(train$spam, p_train)
+
+(t_train[2] + t_train[3]) / sum(t_train) 
+# 0.34% erreurs sur la base d'apprentissage
+t_train[2] / sum(t_train) 
+# non detection 0.31%
+t_train[3] / sum(t_train) 
+# taux de fausse alarme 0.029%
+
+p_test <- predict(forest, test, type="class")
+t_test <- table(test$spam, p_test)
+
+(t_test[2] + t_test[3]) / sum(t_test) 
+# 1.7% erreurs sur la base de test
+t_test[2] / sum(t_test) 
+# taux de non detection: 1.4%
+t_test[3] / sum(t_test) 
+# taux de fausse alarme 0.26%
+
+# Les performances sont encore meilleurs  par rapport au bagging
+# un randomforest permet de créer des arbres plus indépendants en les échantillonant 
+# à chaque noeud, ce qui permet une meilleur precision d'apprentissage.
+
+varImpPlot(forest)
+# Les variables importantes son celles correspondant à la fréquence des caractères "$" et "!"
+# Elles maximisent le coefficient de Gini qui mesure la dispersion de nos données
+
+
+# SCORING
+
+# Classification avec un svm
+
+Ytrain <- train[,ncol(train)]
+train_bis <- train[,-ncol(train)]
+
+svm <- ksvm(x=as.matrix(train_bis), y=as.factor(Ytrain), kernel="rbfdot", type='C-svc')
+
+p_train <- predict(svm, train_bis, type="response")
+t_train <- table(train$spam, p_train)
+(t_train[2] + t_train[3]) / sum(t_train)
+# 4.6% erreurs sur la base d'apprentissage
+t_train[2] / sum(t_train) 
+# taux de non detection: 3%
+t_train[3] / sum(t_train) 
+# taux de fausse alarme: 1.53%
+
+p_test <- predict(svm, test[,-ncol(test)], type="response")
+t_test <- table(test$spam, p_test)
+(t_test[2] + t_test[3]) / sum(t_test) 
+# 5.21% erreurs sur la base de test
+t_test[2] / sum(t_test)
+# taux de non detection: 3.6%
+t_test[3] / sum(t_test) 
+# taux de fausse alarme: 1.65%
+
+# le svm semble être moins precis que les algorithmes utilisés précedemment
+# La methode de Random Forest est plus adaptés pour traiter ce problème
+
+
+# Comparaison des modèles de classification
+
+n = 20
+last_train <- matrix(0, n, 4)
+last_test <- matrix(0, n, 4)
+colnames(last_train) = c("arbre", "bagging", "randomForest", "svm")
+colnames(last_test) = c("arbre", "bagging", "randomForest", "svm")
+
+for (k in (1:n)) {
+  samp <- sample(nrow(tab), floor(nrow(tab)*0.75), replace=FALSE)
+  train <- tab[-samp,]
+  test <- tab[samp,]
+  
+  # creation des différents classifieurs
+  x_svm = as.matrix(train[,-ncol(train)])
+  y_svm = as.factor(train[,ncol(train)])
+  svm <- ksvm(x=x_svm, y=y_svm, kernel="rbfdot", type="C-svc")
+  tree <- rpart('spam ~ .', data=train)
+  bag <- bagging(spam ~ ., data=train)
+  forest <- randomForest(spam ~ ., train)
+  
+  p_svm <- predict(svm, train[,-ncol(train)], type="response")
+  p_tree <- predict(tree, train, type="class")
+  p_bag <- predict(bag, train, type="class")
+  p_forest <- predict(forest, train, type="class")
+  
+  last_train[j,1] <- (table(train$spam, p_svm)[1,2] + table(train$spam, p_svm)[2,1]) / nrow(train)
+  last_train[j,2] <- (table(train$spam, p_tree)[1,2] + table(train$spam, p_tree)[2,1]) / nrow(train)
+  last_train[j,3] <- (table(train$spam, p_bag)[1,2] + table(train$spam, p_bag)[2,1]) / nrow(train)
+  last_train[j,4] <- (table(train$spam, p_forest)[1,2] + table(train$spam, p_forest)[2,1]) / nrow(train)
+  
+  p_svm <- predict(svm, test[,-ncol(test)], type="response")
+  p_tree <- predict(tree, test, type="class")
+  p_bag <- predict(bag, test, type="class")
+  p_forest <- predict(forest, test, type="class")
+  
+  last_test[j,1] <- (table(test$spam, p_svm)[1,2] + table(test$spam, p_svm)[2,1]) / nrow(test)
+  last_test[j,2] <- (table(test$spam, p_tree)[1,2] + table(test$spam, p_tree)[2,1]) / nrow(test)
+  last_test[j,3] <- (table(test$spam, p_bag)[1,2] + table(test$spam, p_bag)[2,1]) / nrow(test)
+  last_test[j,4] <- (table(test$spam, p_forest)[1,2] + table(test$spam, p_forest)[2,1]) / nrow(test)
+}
+colMeans(etrain)
+colMeans(etest)
+
+boxplot(etrain, main="Spam train for k=10")
+boxplot(etest, main="Spam test for k=10")
+
+# On obtient les meilleurs resultats sur le test dataset avec un randomForest
+
 
 
 
