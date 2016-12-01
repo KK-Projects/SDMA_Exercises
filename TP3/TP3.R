@@ -94,7 +94,8 @@ mean((Y-pY$fit)**2)
 # non nul
 
 
-# Application II : agr ́egation de mod`eles
+# Application II : aggregation des modeles
+
 
 
 
