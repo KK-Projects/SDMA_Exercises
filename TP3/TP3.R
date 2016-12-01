@@ -247,7 +247,7 @@ t_test[3] / sum(t_test)
 
 # Comparaison des modèles de classification
 
-n = 20
+n = 50
 last_train <- matrix(0, n, 4)
 last_test <- matrix(0, n, 4)
 colnames(last_train) = c("arbre", "bagging", "randomForest", "svm")
@@ -258,7 +258,7 @@ for (k in (1:n)) {
   train <- tab[-samp,]
   test <- tab[samp,]
   
-  # creation des différents classifieurs
+  # Creation des Classifications: 
   x_svm = as.matrix(train[,-ncol(train)])
   y_svm = as.factor(train[,ncol(train)])
   svm <- ksvm(x=x_svm, y=y_svm, kernel="rbfdot", type="C-svc")
@@ -266,33 +266,41 @@ for (k in (1:n)) {
   bag <- bagging(spam ~ ., data=train)
   forest <- randomForest(spam ~ ., train)
   
+  # Prediction des données Train
   p_svm <- predict(svm, train[,-ncol(train)], type="response")
   p_tree <- predict(tree, train, type="class")
   p_bag <- predict(bag, train, type="class")
   p_forest <- predict(forest, train, type="class")
   
-  last_train[j,1] <- (table(train$spam, p_svm)[1,2] + table(train$spam, p_svm)[2,1]) / nrow(train)
-  last_train[j,2] <- (table(train$spam, p_tree)[1,2] + table(train$spam, p_tree)[2,1]) / nrow(train)
-  last_train[j,3] <- (table(train$spam, p_bag)[1,2] + table(train$spam, p_bag)[2,1]) / nrow(train)
-  last_train[j,4] <- (table(train$spam, p_forest)[1,2] + table(train$spam, p_forest)[2,1]) / nrow(train)
+  # Store les erreurs
+  last_train[k,1] <- (table(train$spam, p_svm)[1,2] + table(train$spam, p_svm)[2,1]) / nrow(train)
+  last_train[k,2] <- (table(train$spam, p_tree)[1,2] + table(train$spam, p_tree)[2,1]) / nrow(train)
+  last_train[k,3] <- (table(train$spam, p_bag)[1,2] + table(train$spam, p_bag)[2,1]) / nrow(train)
+  last_train[k,4] <- (table(train$spam, p_forest)[1,2] + table(train$spam, p_forest)[2,1]) / nrow(train)
   
+  # Prediction des données Test
   p_svm <- predict(svm, test[,-ncol(test)], type="response")
   p_tree <- predict(tree, test, type="class")
   p_bag <- predict(bag, test, type="class")
   p_forest <- predict(forest, test, type="class")
   
-  last_test[j,1] <- (table(test$spam, p_svm)[1,2] + table(test$spam, p_svm)[2,1]) / nrow(test)
-  last_test[j,2] <- (table(test$spam, p_tree)[1,2] + table(test$spam, p_tree)[2,1]) / nrow(test)
-  last_test[j,3] <- (table(test$spam, p_bag)[1,2] + table(test$spam, p_bag)[2,1]) / nrow(test)
-  last_test[j,4] <- (table(test$spam, p_forest)[1,2] + table(test$spam, p_forest)[2,1]) / nrow(test)
+  # Store les erreurs
+  last_test[k,1] <- (table(test$spam, p_svm)[1,2] + table(test$spam, p_svm)[2,1]) / nrow(test)
+  last_test[k,2] <- (table(test$spam, p_tree)[1,2] + table(test$spam, p_tree)[2,1]) / nrow(test)
+  last_test[k,3] <- (table(test$spam, p_bag)[1,2] + table(test$spam, p_bag)[2,1]) / nrow(test)
+  last_test[k,4] <- (table(test$spam, p_forest)[1,2] + table(test$spam, p_forest)[2,1]) / nrow(test)
 }
-colMeans(etrain)
-colMeans(etest)
+# Calcul des moyennes des erreurs pour chaque algorithme:
+colMeans(last_train)
+colMeans(last_test)
 
-boxplot(etrain, main="Spam train for k=10")
-boxplot(etest, main="Spam test for k=10")
+# PLot du Graphique
+boxplot(last_train, main="Spam training (size iteration n=50) ")
+boxplot(last_test, main="Spam testing (size iteration n=50) ")
 
-# On obtient les meilleurs resultats sur le test dataset avec un randomForest
+# Conclusion:
+  # On obtient les meilleurs resultats sur le test set avec l'algorithme SVM  suivi du RandomForest
+  # L'arbre et le bagging montrent quand a eux les resultats les moins bons
 
 
 
