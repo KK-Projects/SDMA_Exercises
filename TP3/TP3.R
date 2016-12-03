@@ -13,7 +13,11 @@ dim(data)
 # est non inversible et l'estimateur des moindres carrées instable
 
 # EN.ATM.CO2E.KT représente l'évolution du CO2 au cours du temps
-plot(data$Year, tab$EN.ATM.CO2E.KT)
+plot(data$Year, data$EN.ATM.CO2E.KT,typ='l',ann=F)
+title(main="Evolution du CO2 �mis par an", xlab="Ann�e", ylab="emission de CO2 (kT)")
+linear.model = lm(data$EN.ATM.CO2E.KT ~ data$Year)
+abline(linear.model,col='blue')
+
 
 # La regression minimise l'erreur des moindres carrées, si les données ne sont
 # pas normées les variables dont les valeures peuvent devenir assez importante
@@ -58,19 +62,20 @@ which.min(resridge$GCV) # lambda = 0.01 (deuxième colonne)
 coefridge <- coef(resridge)[which.min(resridge$GCV),]
 
 # Calcul de l'erreur quadratique moyenne
-Yridge <- as.matrix(scaled_data[-1])%*%as.vector(coefridge)
-mean((Yridge - scaled_data$EN.ATM.CO2E.KT)**2) # 0.092 (avec les données normalisées)
+X = cbind( first_col = 1 , scaled_data[,!names(scaled_data) %in% c("Year","EN.ATM.CO2E.KT")] )
+Yridge <- as.matrix(X)%*%as.vector(coefridge)
+mean((Yridge - scaled_data$EN.ATM.CO2E.KT)**2) # 3.590837e-11 (avec les donn�es normalisées)
 
 ## Regression lasso
 
 # La regression LASSO suit le même principe que la regression RIDGE, sauf
 # que la regularisation est de type L1
 library(lars)
-data_clean <- scaled_data[-22] # Supprime la variable a predire de nos donnees (CO2E)
-data_clean <- data_clean[-1] # Supprime la variable "Year"
-X = as.matrix(data_clean) 
+# data_clean <- scaled_data[-22] # Supprime la variable a predire de nos donnees (CO2E)
+# data_clean <- data_clean[-1] # Supprime la variable "Year"
+# X = as.matrix(data_clean) 
 Y = as.vector(scaled_data$EN.ATM.CO2E.KT)
-
+X = as.matrix(X) 
 reslasso <- lars(X,Y,type="lasso") # Fit la regression Lasso
 plot(reslasso)
 plot(reslasso$lambda)
@@ -93,7 +98,7 @@ coef <- predict.lars(reslasso,X,type="coefficients",mode="lambda",s=c(0.02,0.04,
 
 pY <- predict.lars(reslasso,X,type="fit",mode="lambda",s=0.06)
 mean((Y-pY$fit)**2) 
-# On obtient 0.008606711 inférieur à la regression ridge, ce qui montre que la regression Lasso
+# On obtient 0.000308241 inférieur à la regression ridge, ce qui montre que la regression Lasso
 # a pu être un meilleur fit en donnant plus d'importance aux variables dont le coefficient est 
 # non nul
 
@@ -121,17 +126,19 @@ colnames(tab)
 
 # Splitting data in train and test
 ## 75% of the sample size
-smp_size <- floor(0.75 * nrow(tab))
+train_ind = as.matrix(read.table('indtrain.txt', header=T, sep=';'));
+#smp_size <- floor(0.75 * nrow(tab))
 
 ## set the seed to make your partition reproductible
-set.seed(123)
-train_ind <- sample(seq_len(nrow(tab)), size = smp_size)
+#set.seed(123)
+#train_ind <- sample(seq_len(nrow(tab)), size = smp_size)
 
 tab_train <- tab[train_ind, ]
 tab_test <- tab[-train_ind, ]
 # Arbres de Classification
 
 tree <- rpart('spam ~ .', data=tab_train)
+plot(tree)
 par(mfrow = c(1,1), xpd = NA) 
 text(tree, use.n = TRUE)
 # La variable la plus influente est A.53, c'est à dire la présence du caractere "$"
@@ -139,20 +146,20 @@ text(tree, use.n = TRUE)
 p_train <- predict(tree, tab_train, type="class")
 t_train <- table(tab_train$spam, p_train)
 (t_train[2] + t_train[3]) / sum(t_train) 
-# 8.7% erreurs sur la base d'apprentissage
-t_train[2] / sum(t_train) 
-# non detection 5.9%
-t_train[3] / sum(t_train)
-# taux de fausse alarme 2.8%
+# 9.9% erreurs sur la base d'apprentissage
+t_train[2] / (t_train[2,1]+t_train[2,2]) 
+# non detection 18%
+t_train[3] / (t_train[1,1]+t_train[1,2])
+# taux de fausse alarme 4.6%
 
 p_test <- predict(tree, tab_test, type="class")
 t_test <- table(tab_test$spam, p_test)
 (t_test[2] + t_test[3]) / sum(t_test) 
-# 10.3% erreurs sur la base de test
-t_test[2] / sum(t_test)
-# non detection 7.6%
-t_test[3] / sum(t_test)
-# taux de fausse alarme 2.7%
+# 11.3% erreurs sur la base de test
+t_test[2] / (t_test[2,1]+t_test[2,2])
+# non detection 21%
+t_test[3] / (t_test[1,1]+t_test[1,2])
+# taux de fausse alarme 4.3%
 # le taux de non détection est plus éleve  que celui de fausse alarme
 # on préfère laisser passer de spam que de classer en spam de email valides
 
@@ -164,20 +171,20 @@ bag <- bagging(spam ~ ., data=tab_train)
 p_train <- predict(bag, tab_train, type="class")
 t_train <- table(tab_train$spam, p_train)
 (t_train[2] + t_train[3]) / sum(t_train) 
-# 0.11% erreurs sur la base d'apprentissage
-t_train[2] / sum(t_train) 
-# non detection 0.09%
-t_train[3] / sum(t_train)
-# taux de fausse alarme 0.057%
+# 0.2% erreurs sur la base d'apprentissage
+t_train[2] / (t_train[2,1]+t_train[2,2]) 
+# non detection 0.2%
+t_train[3] / (t_train[1,1]+t_train[1,2]) 
+# taux de fausse alarme 0.2%
 
 p_test <- predict(bag, tab_test, type="class")
 t_test <- table(tab_test$spam, p_test)
 (t_test[2] + t_test[3]) / sum(t_test)
-# 6.42% erreurs sur la base de test
-t_test[2] / sum(t_test) 
-# non detection 4.43%
-t_test[3] / sum(t_test) 
-# taux de fausse alarme 1.9%
+# 5% erreurs sur la base de test
+t_test[2] / (t_test[2,1]+t_test[2,2])
+# non detection 10%
+t_test[3] / (t_test[1,1]+t_test[1,2])
+# taux de fausse alarme 2%
 
 # On obtient ici de meilleurs résultats vue que le bagging fait appel à plusieurs
 # classifieurs, et utilise le système de vote pour trouver la bonne estimation
@@ -187,6 +194,7 @@ t_test[3] / sum(t_test)
 tab = read.table('spam.txt', header=T, sep=';');
 indtrain = read.table('indtrain.txt', header=T, sep=';');
 train <- train <- tab[indtrain$indtrain,]
+test <- tab[-indtrain$indtrain, ]
 forest <- randomForest(spam ~ ., train)
 
 p_train <- predict(forest, train, type="class")
@@ -194,20 +202,20 @@ t_train <- table(train$spam, p_train)
 
 (t_train[2] + t_train[3]) / sum(t_train) 
 # 0.34% erreurs sur la base d'apprentissage
-t_train[2] / sum(t_train) 
-# non detection 0.31%
-t_train[3] / sum(t_train) 
-# taux de fausse alarme 0.029%
+t_train[2] / (t_train[2,1]+t_train[2,2]) 
+# non detection 0.8%
+t_train[3] / (t_train[1,1]+t_train[1,2]) 
+# taux de fausse alarme 0.04%
 
 p_test <- predict(forest, test, type="class")
 t_test <- table(test$spam, p_test)
 
 (t_test[2] + t_test[3]) / sum(t_test) 
-# 1.7% erreurs sur la base de test
-t_test[2] / sum(t_test) 
-# taux de non detection: 1.4%
-t_test[3] / sum(t_test) 
-# taux de fausse alarme 0.26%
+# 4.9% erreurs sur la base de test
+t_test[2] / (t_test[2,1]+t_test[2,2])
+# taux de non detection: 8%
+t_test[3] / (t_test[1,1]+t_test[1,2])
+# taux de fausse alarme 2%
 
 # Les performances sont encore meilleurs  par rapport au bagging
 # un randomforest permet de créer des arbres plus indépendants en les échantillonant 
@@ -231,19 +239,19 @@ p_train <- predict(svm, train_bis, type="response")
 t_train <- table(train$spam, p_train)
 (t_train[2] + t_train[3]) / sum(t_train)
 # 4.6% erreurs sur la base d'apprentissage
-t_train[2] / sum(t_train) 
-# taux de non detection: 3%
-t_train[3] / sum(t_train) 
-# taux de fausse alarme: 1.53%
+t_train[2] / (t_train[2,1]+t_train[2,2]) 
+# taux de non detection: 7%
+t_train[3] / (t_train[1,1]+t_train[1,2]) 
+# taux de fausse alarme: 2.4%
 
 p_test <- predict(svm, test[,-ncol(test)], type="response")
 t_test <- table(test$spam, p_test)
 (t_test[2] + t_test[3]) / sum(t_test) 
-# 5.21% erreurs sur la base de test
-t_test[2] / sum(t_test)
-# taux de non detection: 3.6%
-t_test[3] / sum(t_test) 
-# taux de fausse alarme: 1.65%
+# 5.9% erreurs sur la base de test
+t_test[2] / (t_test[2,1]+t_test[2,2])
+# taux de non detection: 9%
+t_test[3] / (t_test[1,1]+t_test[1,2])
+# taux de fausse alarme: 3%
 
 # le svm semble être moins precis que les algorithmes utilisés précedemment
 # La methode de Random Forest est plus adaptés pour traiter ce problème
