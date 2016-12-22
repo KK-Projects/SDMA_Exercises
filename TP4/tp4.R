@@ -3,7 +3,7 @@
 # Karl BOU ABBOUD
 # Marouane YALA
 
-# Décomposition en valeurs singulières & Analyse en composantes principales
+# D?composition en valeurs singuli?res & Analyse en composantes principales
 
 
 # EXERCICE 1 : DECOMPOSITION EN VALEURS SINGULIERES
@@ -15,11 +15,11 @@ X = matrix(rnorm(p*n), nrow=n, ncol=p)
 S = cov(X)
 
 # Les coefficients diagonaux de S sont plus significatif que les coefficients non-diagonaux
-# à cause de l'indépendance des variables Xj
+# ? cause de l'ind?pendance des variables Xj
 
-# La décomposition en valeures singulieres consiste à decomposer une matrice en un produit
+# La d?composition en valeures singulieres consiste ? decomposer une matrice en un produit
 # U . Sigma . tV avec U et V sont orthogonales, respectivement matrice de passage et de sortie et
-  # Sigma est une matrice diagonale contenant les valeures singulières de S (racine des valeures propres de tS.S)
+  # Sigma est une matrice diagonale contenant les valeures singuli?res de S (racine des valeures propres de tS.S)
 
 svd_ <- svd(S)
 U <- svd_$u
@@ -33,11 +33,11 @@ Sigma <- diag(svd_$d)
 norm(U - V, type="F") # 1e-15
 norm(U - V, type="2")  # 1e-15
 
-sum(Sigma) - sum(diag(S)) # ~ 8e-16 les traces sont égales 
+sum(Sigma) - sum(diag(S)) # ~ 8e-16 les traces sont ?gales 
 
 S2 <- U %*% Sigma %*% t(V)
 norm(S2 - S, type="F") # ~3e-15
-# Les deux matrices sont égales
+# Les deux matrices sont ?gales
 
 
 # Analyse en composantes principales
@@ -103,25 +103,30 @@ s.corcircle(res2$co[,2:3])
 ## Classification non supervisÃ©e
 
 res1 <- kmeans(X, 1)
-res1$centers # CoordonnÃ©es des centres
-res1$cluster # Classe de chaque point
-res1$withinss # vector contenant la somme des distances au carrÃ© de chaque center aux points de son cluster
-res1$betweenss # somme des distances au carrÃ© de chaque voitures qui ne font pas partie du mÃªme cluster
-# la classification pour k=1 Ã  peu de sens car toute les voitures appartiennent au mÃªme cluster
+# CoordonnÃ©es des centres
+res1$centers 
+# Classe de chaque point
+res1$cluster 
+# vector contenant la somme des distances au carrÃ© de chaque center aux points de son cluster
+res1$withinss 
+# somme des distances au carrÃ© de chaque voitures qui ne font pas partie du mÃªme cluster
+res1$betweenss 
+# la classification pour k=1 Ã  peu de sens 
 
+# On a ici deux clusters pour les voitures puissantes et imposantes et les voitures plus lÃ¨gere 
 res2 <- kmeans(X,2)
 res2$centers
 res2$cluster
 res2$withinss
 res2$betweenss
-# On a ici deux clusters pour les voitures puissantes et imposantes et les voitures plus lÃ¨gere 
 
+# Pour les deux clustering ci-dessous,
 res3 <- kmeans(X,3)
 res3$centers
 res3$cluster
 res3$withinss
 res3$betweenss
-# MÃªme chose que prÃ©cedemment avec une classe intermÃ©diaire
+
 
 res4 <- kmeans(X,4)
 res4$centers
